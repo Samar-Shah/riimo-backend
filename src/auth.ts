@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { admin, bearer } from 'better-auth/plugins';
-import { dialect } from '../../kysely.config';
+import { dialect } from '../kysely.config';
 import * as dotenv from 'dotenv';
 
 dotenv.config();

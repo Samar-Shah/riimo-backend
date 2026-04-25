@@ -1,3 +1,7 @@
+import { sql } from 'kysely';
+import * as crypto from 'crypto';
+import { hashPassword } from 'better-auth/crypto';
+import { Role } from '../database/types';
 import {
   Injectable,
   Logger,
@@ -5,14 +9,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { Role } from '../database/types';
-import { hashPassword } from 'better-auth/crypto';
-import * as crypto from 'crypto';
-import { sql } from 'kysely';
 
 @Injectable()
-export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+export class UserService {
+  private readonly logger = new Logger(UserService.name);
 
   constructor(private db: DatabaseService) {}
 
