@@ -6,20 +6,33 @@ import {
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
-import type { Role } from '../database/types';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('invite')
-  @Roles(['admin', 'org-admin'])
-  async inviteUser(
+  @Post('invite-admin')
+  @Roles(['admin'])
+  async inviteAdmin(@Body('name') name: string, @Body('email') email: string) {
+    return this.userService.inviteUser(name, email, 'admin');
+  }
+
+  @Post('invite-org-admin')
+  @Roles(['admin'])
+  async inviteOrgAdmin(
     @Body('name') name: string,
     @Body('email') email: string,
-    @Body('role') role: Role,
   ) {
-    return this.userService.inviteUser(name, email, role);
+    return this.userService.inviteUser(name, email, 'org-admin');
+  }
+
+  @Post('invite-sales-rep')
+  @Roles(['org-admin'])
+  async inviteSalesRep(
+    @Body('name') name: string,
+    @Body('email') email: string,
+  ) {
+    return this.userService.inviteUser(name, email, 'sales-rep');
   }
 
   @Post('setup-password')
