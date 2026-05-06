@@ -34,7 +34,9 @@
     "dotenv": "^17.4.2",
     "kysely": "^0.28.16",
     "pg": "^8.20.0",
+    "react-email": "^6.0.8",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.12.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.28"
   },

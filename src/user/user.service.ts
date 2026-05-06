@@ -9,12 +9,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private emailService: EmailService,
+  ) {}
 
   async inviteUser(name: string, email: string, role: Role) {
     const existingUser = await this.db
@@ -130,11 +134,6 @@ export class UserService {
       })
       .execute();
 
-    const setupUrl = `${process.env.REACT_APP_URL}/setup-password?token=${token}&email=${encodeURIComponent(email)}`;
-    this.logger.log(`[MOCK EMAIL] To: ${email}`);
-    this.logger.log(`[MOCK EMAIL] Subject: Set up your password for Riimo`);
-    this.logger.log(
-      `[MOCK EMAIL] Body: Click to set up your password: ${setupUrl}`,
-    );
+    await this.emailService.sendEmail([email]);
   }
 }
