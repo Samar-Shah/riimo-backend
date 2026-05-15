@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from 'src/email/email.service';
+import { OnboardingTemplate } from 'src/templates/OnboardingTemplate';
 
 @Injectable()
 export class UserService {
@@ -48,7 +49,43 @@ export class UserService {
     return { message: 'User invited successfully, email sent' };
   }
 
-  async setupPassword(token: string, email: string, password: string) {
+  async getPasswordSetupInfo(token: string) {
+    const verification = await this.db
+      .selectFrom('verification')
+      .selectAll()
+      .where('value', '=', this.hashToken(token))
+      .executeTakeFirst();
+
+    if (!verification || verification.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    const email = verification.identifier.replace('password-setup-', '');
+
+    const user = await this.db
+      .selectFrom('user')
+      .selectAll()
+      .where('email', '=', email)
+      .executeTakeFirst();
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return { email: user.email, name: user.name };
+  }
+
+  async setupPassword(token: string, password: string) {
+    const verification = await this.db
+      .selectFrom('verification')
+      .selectAll()
+      .where('value', '=', this.hashToken(token))
+      .executeTakeFirst();
+
+    if (!verification || verification.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    const email = verification.identifier.replace('password-setup-', '');
+
     const user = await this.db
       .selectFrom('user')
       .selectAll()
@@ -59,35 +96,35 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    const verification = await this.db
-      .selectFrom('verification')
-      .selectAll()
-      .where('identifier', '=', `password-setup-${email}`)
-      .where('value', '=', this.hashToken(token))
-      .executeTakeFirst();
-
-    if (!verification || verification.expiresAt < new Date()) {
-      throw new BadRequestException('Invalid or expired token');
-    }
-
     const hashedPassword = await hashPassword(password);
 
-    await this.db
-      .insertInto('account')
-      .values({
-        accountId: email,
-        providerId: 'credential',
-        userId: user.id,
-        password: hashedPassword,
-        createdAt: sql`now()`,
-        updatedAt: sql`now()`,
-      })
-      .execute();
+    await this.db.transaction().execute(async (tx) => {
+      await tx
+        .insertInto('account')
+        .values({
+          accountId: email,
+          providerId: 'credential',
+          userId: user.id,
+          password: hashedPassword,
+          createdAt: sql`now()`,
+          updatedAt: sql`now()`,
+        })
+        .execute();
 
-    await this.db
-      .deleteFrom('verification')
-      .where('identifier', '=', `password-setup-${email}`)
-      .execute();
+      await tx
+        .updateTable('user')
+        .where('id', '=', user.id)
+        .set({
+          emailVerified: true,
+          updatedAt: sql`now()`,
+        })
+        .execute();
+
+      await tx
+        .deleteFrom('verification')
+        .where('id', '=', verification.id)
+        .execute();
+    });
 
     return { message: 'Password set successfully' };
   }
@@ -97,11 +134,10 @@ export class UserService {
       .selectFrom('user')
       .selectAll()
       .where('email', '=', email)
+      .where('emailVerified', '=', false)
       .executeTakeFirst();
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
 
     await this.db
       .deleteFrom('verification')
@@ -134,6 +170,14 @@ export class UserService {
       })
       .execute();
 
-    await this.emailService.sendEmail([email]);
+    const setupUrl = `${process.env.REACT_APP_URL}/setup-password?token=${token}`;
+    const html = OnboardingTemplate(setupUrl);
+
+    await this.emailService.sendEmail(
+      [email],
+      `Riimo <${process.env.ONBOARDING_EMAIL || 'no-reply@riimo.ai'}>`,
+      'Set up your password for Riimo',
+      html,
+    );
   }
 }

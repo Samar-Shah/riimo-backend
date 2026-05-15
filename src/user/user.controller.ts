@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import {
   AllowAnonymous,
   Roles,
@@ -35,14 +35,19 @@ export class UserController {
     return this.userService.inviteUser(name, email, 'sales-rep');
   }
 
+  @Get('setup-password/:token')
+  @AllowAnonymous()
+  async getPasswordSetupInfo(@Param('token') token: string) {
+    return this.userService.getPasswordSetupInfo(token);
+  }
+
   @Post('setup-password')
   @AllowAnonymous()
   async setupPassword(
     @Body('token') token: string,
-    @Body('email') email: string,
     @Body('password') password: string,
   ) {
-    return this.userService.setupPassword(token, email, password);
+    return this.userService.setupPassword(token, password);
   }
 
   @Post('resend-invite')
