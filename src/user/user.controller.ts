@@ -35,7 +35,7 @@ export class UserController {
     return this.userService.inviteUser(name, email, 'sales-rep');
   }
 
-  @Get('setup-password/:token')
+  @Get('get-password-setup-info/:token')
   @AllowAnonymous()
   async getPasswordSetupInfo(@Param('token') token: string) {
     return this.userService.getPasswordSetupInfo(token);

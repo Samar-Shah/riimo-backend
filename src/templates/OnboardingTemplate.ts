@@ -36,7 +36,7 @@ export const OnboardingTemplate = (setupUrl: string): string => `
                   href="${setupUrl}"
                   target="_blank"
                   style="
-                    background-color:#111827;
+                    background-color:#2a54ea;
                     color:#ffffff;
                     padding:12px 20px;
                     text-decoration:none;

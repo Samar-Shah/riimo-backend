@@ -170,7 +170,7 @@ export class UserService {
       })
       .execute();
 
-    const setupUrl = `${process.env.REACT_APP_URL}/setup-password?token=${token}`;
+    const setupUrl = `${process.env.REACT_APP_URL}/setup-password/${token}`;
     const html = OnboardingTemplate(setupUrl);
 
     await this.emailService.sendEmail(
