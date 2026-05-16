@@ -1,4 +1,4 @@
-export const OnboardingTemplate = `
+export const OnboardingTemplate = (setupUrl: string): string => `
 <!DOCTYPE html>
 <html>
   <head>
@@ -7,13 +7,13 @@ export const OnboardingTemplate = `
     <title>Set up your password</title>
   </head>
   <body style="margin:0; padding:0; background-color:#f4f4f7; font-family: Arial, sans-serif;">
-    
+
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7; padding:40px 0;">
       <tr>
         <td align="center">
-          
+
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background:#ffffff; border-radius:8px; padding:40px;">
-            
+
             <tr>
               <td align="center" style="padding-bottom:20px;">
                 <h1 style="margin:0; font-size:24px; color:#111827;">
@@ -32,11 +32,11 @@ export const OnboardingTemplate = `
 
             <tr>
               <td align="center" style="padding:30px 0;">
-                <a 
-                  href="${process.env.REACT_APP_URL}"
+                <a
+                  href="${setupUrl}"
                   target="_blank"
                   style="
-                    background-color:#111827;
+                    background-color:#2a54ea;
                     color:#ffffff;
                     padding:12px 20px;
                     text-decoration:none;
@@ -78,5 +78,5 @@ export const OnboardingTemplate = `
     </table>
 
   </body>
-</html>  
+</html>
 `;

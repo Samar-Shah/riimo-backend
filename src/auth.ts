@@ -5,8 +5,11 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+const trustedOrigins = process.env.ORIGIN_LIST?.split(',') || [];
+
 export const auth = betterAuth({
-  basePath: '/auth',
+  basePath: '/api/auth',
+  trustedOrigins,
   database: {
     dialect,
     type: 'postgres',
@@ -26,6 +29,7 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
+    trustedOrigins: (origin) => !origin, // desktop app (no origin header)
   },
   plugins: [admin(), bearer()],
 });
