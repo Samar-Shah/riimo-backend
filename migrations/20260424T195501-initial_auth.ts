@@ -1,5 +1,5 @@
 import { Kysely, sql } from 'kysely';
-import { Database } from 'src/database/types';
+import { Database } from '../src/database/types';
 
 export async function up(db: Kysely<Database>): Promise<void> {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`.execute(db);
@@ -11,6 +11,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
       col.primaryKey().defaultTo(sql`uuid_generate_v4()`),
     )
     .addColumn('name', 'text', (col) => col.notNull())
+    .addColumn('status', 'text', (col) => col.notNull().defaultTo('invited'))
     .addColumn('email', 'text', (col) => col.notNull().unique())
     .addColumn('emailVerified', 'boolean', (col) =>
       col.notNull().defaultTo(false),

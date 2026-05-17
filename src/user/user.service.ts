@@ -1,7 +1,8 @@
 import { sql } from 'kysely';
 import * as crypto from 'crypto';
 import { hashPassword } from 'better-auth/crypto';
-import { Role } from '../database/types';
+import type { Role } from '../database/types';
+import { USER_ROLES, USER_STATUS } from '../constants';
 import {
   Injectable,
   Logger,
@@ -9,8 +10,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { EmailService } from 'src/email/email.service';
-import { OnboardingTemplate } from 'src/templates/OnboardingTemplate';
+import { EmailService } from '../email/email.service';
+import { OnboardingTemplate } from '../templates/OnboardingTemplate';
+import { GetAdminsQueryDto } from './dto';
+import { escapeIlikePattern } from '../utils';
 
 @Injectable()
 export class UserService {
@@ -37,7 +40,6 @@ export class UserService {
       .values({
         name,
         email,
-        emailVerified: false,
         createdAt: sql`now()`,
         updatedAt: sql`now()`,
         role,
@@ -115,6 +117,7 @@ export class UserService {
         .updateTable('user')
         .where('id', '=', user.id)
         .set({
+          status: USER_STATUS.ACTIVE,
           emailVerified: true,
           updatedAt: sql`now()`,
         })
@@ -179,5 +182,52 @@ export class UserService {
       'Set up your password for Riimo',
       html,
     );
+  }
+
+  async getAdminUsers({
+    page,
+    pageSize,
+    status,
+    search,
+    sortBy,
+    sortOrder,
+  }: GetAdminsQueryDto) {
+    const trimmedSearch = search?.trim() ?? '';
+
+    // Build shared base with all WHERE conditions
+    let base = this.db.selectFrom('user').where('role', '=', USER_ROLES.ADMIN);
+
+    if (status) base = base.where('status', '=', status);
+    if (trimmedSearch) {
+      const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
+      base = base.where((eb) =>
+        eb.or([eb('name', 'ilike', pattern), eb('email', 'ilike', pattern)]),
+      );
+    }
+
+    // Run count and data queries in parallel
+    const [{ count }, data] = await Promise.all([
+      base
+        .select((eb) => eb.fn.countAll<string>().as('count'))
+        .executeTakeFirstOrThrow(),
+      base
+        .select(['id', 'name', 'email', 'status', 'createdAt', 'updatedAt'])
+        .orderBy(sortBy, sortOrder)
+        .limit(pageSize)
+        .offset((page - 1) * pageSize)
+        .execute(),
+    ]);
+
+    const total = Number(count);
+
+    return {
+      data,
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / pageSize),
+      },
+    };
   }
 }

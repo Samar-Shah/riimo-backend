@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
 import {
   AllowAnonymous,
   Roles,
@@ -6,33 +6,35 @@ import {
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
+import { USER_ROLES } from '../constants';
+import { GetAdminsQueryDto } from './dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('invite-admin')
-  @Roles(['admin'])
+  @Roles([USER_ROLES.ADMIN])
   async inviteAdmin(@Body('name') name: string, @Body('email') email: string) {
-    return this.userService.inviteUser(name, email, 'admin');
+    return this.userService.inviteUser(name, email, USER_ROLES.ADMIN);
   }
 
   @Post('invite-org-admin')
-  @Roles(['admin'])
+  @Roles([USER_ROLES.ADMIN])
   async inviteOrgAdmin(
     @Body('name') name: string,
     @Body('email') email: string,
   ) {
-    return this.userService.inviteUser(name, email, 'org-admin');
+    return this.userService.inviteUser(name, email, USER_ROLES.ORG_ADMIN);
   }
 
   @Post('invite-sales-rep')
-  @Roles(['org-admin'])
+  @Roles([USER_ROLES.ORG_ADMIN])
   async inviteSalesRep(
     @Body('name') name: string,
     @Body('email') email: string,
   ) {
-    return this.userService.inviteUser(name, email, 'sales-rep');
+    return this.userService.inviteUser(name, email, USER_ROLES.SALES_REP);
   }
 
   @Get('get-password-setup-info/:token')
@@ -51,7 +53,7 @@ export class UserController {
   }
 
   @Post('resend-invite')
-  @Roles(['admin', 'org-admin'])
+  @Roles([USER_ROLES.ADMIN, USER_ROLES.ORG_ADMIN])
   async resendInvite(@Body('email') email: string) {
     return this.userService.resendInvite(email);
   }
@@ -81,11 +83,17 @@ export class UserController {
 
   // Dummy route for RBAC
   @Get('admin-dashboard')
-  @Roles(['admin', 'org-admin'])
+  @Roles([USER_ROLES.ADMIN, USER_ROLES.ORG_ADMIN])
   getAdminDashboard(@Session() session: UserSession) {
     return {
       message: 'Welcome to the admin dashboard',
       user: session.user,
     };
+  }
+
+  @Get('admins')
+  @Roles([USER_ROLES.ADMIN])
+  getAdminUsers(@Query() queryDto: GetAdminsQueryDto) {
+    return this.userService.getAdminUsers(queryDto);
   }
 }

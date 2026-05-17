@@ -22,7 +22,7 @@
     "db:up": "kysely-migration-cli up",
     "db:down": "kysely-migration-cli down",
     "db:down-to": "kysely-migration-cli down-to",
-    "db:create-migration": "kysely-migration-cli create"
+    "db:migrate:new": "kysely-migration-cli create"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -31,6 +31,8 @@
     "@nestjs/typeorm": "^11.0.1",
     "@thallesp/nestjs-better-auth": "^2.6.0",
     "better-auth": "^1.6.9",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",
     "kysely": "^0.28.16",
     "pg": "^8.20.0",
