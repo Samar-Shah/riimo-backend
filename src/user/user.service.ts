@@ -230,4 +230,38 @@ export class UserService {
       },
     };
   }
+
+  async getAdminStats() {
+    const stats = await this.db
+      .selectFrom('user')
+      .where('role', '=', USER_ROLES.ADMIN)
+      .select((eb) => [
+        eb.fn.countAll<number>().as('total'),
+        eb.fn
+          .count<number>('id')
+          .filterWhere('status', '=', USER_STATUS.INVITED)
+          .as('invited'),
+        eb.fn
+          .count<number>('id')
+          .filterWhere('status', '=', USER_STATUS.ACTIVE)
+          .as('active'),
+        eb.fn
+          .count<number>('id')
+          .filterWhere('status', '=', USER_STATUS.BLOCKED)
+          .as('blocked'),
+        eb.fn
+          .count<number>('id')
+          .filterWhere('status', '=', USER_STATUS.DELETED)
+          .as('deleted'),
+      ])
+      .executeTakeFirstOrThrow();
+
+    return {
+      total: Number(stats.total),
+      invited: Number(stats.invited),
+      active: Number(stats.active),
+      blocked: Number(stats.blocked),
+      deleted: Number(stats.deleted),
+    };
+  }
 }

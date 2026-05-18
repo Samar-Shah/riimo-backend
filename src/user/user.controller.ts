@@ -96,4 +96,10 @@ export class UserController {
   getAdminUsers(@Query() queryDto: GetAdminsQueryDto) {
     return this.userService.getAdminUsers(queryDto);
   }
+
+  @Get('admins-stats')
+  @Roles([USER_ROLES.ADMIN])
+  getAdminStats() {
+    return this.userService.getAdminStats();
+  }
 }
