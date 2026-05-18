@@ -1,15 +1,17 @@
 import { ColumnType, Generated, GeneratedAlways, Selectable } from 'kysely';
-
-export type Role = 'admin' | 'org-admin' | 'sales-rep';
+import { USER_ROLES, USER_STATUS } from '../constants';
 
 type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export type Role = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 export interface User {
   id: GeneratedAlways<string>;
   name: string;
   email: string;
   role: Role;
   image: string | null;
+  status: Generated<UserStatus>;
   emailVerified: Generated<boolean>;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -51,9 +53,19 @@ export interface Verification {
   updatedAt: Timestamp;
 }
 
+export interface Organization {
+  id: GeneratedAlways<string>;
+  name: string;
+  isBlocked: Generated<boolean>;
+  isDeleted: Generated<boolean>;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface Database {
   user: User;
   session: Session;
   account: Account;
   verification: Verification;
+  organization: Organization;
 }
