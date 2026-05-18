@@ -1,7 +1,7 @@
 import { sql } from 'kysely';
 import * as crypto from 'crypto';
 import { hashPassword } from 'better-auth/crypto';
-import type { Role } from '../database/types';
+import type { Role, UserStatus } from '../database/types';
 import { USER_ROLES, USER_STATUS } from '../constants';
 import {
   Injectable,
@@ -263,5 +263,37 @@ export class UserService {
       blocked: Number(stats.blocked),
       deleted: Number(stats.deleted),
     };
+  }
+
+  async editAdminUser(
+    id: string,
+    name: string,
+    status?: Exclude<UserStatus, 'deleted' | 'invited'>,
+  ) {
+    await this.db
+      .updateTable('user')
+      .set({
+        name,
+        ...(status !== undefined ? { status } : {}),
+        updatedAt: sql`now()`,
+      })
+      .where('id', '=', id)
+      .where('role', '=', USER_ROLES.ADMIN)
+      .where('status', '!=', USER_STATUS.DELETED)
+      .executeTakeFirstOrThrow(() => new NotFoundException('User not found'));
+
+    return { message: 'User edited successfully' };
+  }
+
+  async deleteAdminUser(id: string) {
+    await this.db
+      .updateTable('user')
+      .set({ status: USER_STATUS.DELETED, updatedAt: sql`now()` })
+      .where('id', '=', id)
+      .where('role', '=', USER_ROLES.ADMIN)
+      .where('status', '!=', USER_STATUS.DELETED)
+      .executeTakeFirstOrThrow();
+
+    return { message: 'User deleted successfully' };
   }
 }

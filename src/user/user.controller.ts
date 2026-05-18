@@ -1,4 +1,14 @@
-import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Query,
+  Put,
+  ParseUUIDPipe,
+  Delete,
+} from '@nestjs/common';
 import {
   AllowAnonymous,
   Roles,
@@ -8,6 +18,7 @@ import {
 import { UserService } from './user.service';
 import { USER_ROLES } from '../constants';
 import { GetAdminsQueryDto } from './dto';
+import { UserStatus } from '../database/types';
 
 @Controller('user')
 export class UserController {
@@ -101,5 +112,23 @@ export class UserController {
   @Roles([USER_ROLES.ADMIN])
   getAdminStats() {
     return this.userService.getAdminStats();
+  }
+
+  @Put('admins/:id')
+  @Roles([USER_ROLES.ADMIN])
+  editAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body('name') name: string,
+    @Body('status') status?: Exclude<UserStatus, 'deleted' | 'invited'>,
+  ) {
+    return this.userService.editAdminUser(id, name, status);
+  }
+
+  @Delete('admins/:id')
+  @Roles([USER_ROLES.ADMIN])
+  deleteAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.userService.deleteAdminUser(id);
   }
 }
