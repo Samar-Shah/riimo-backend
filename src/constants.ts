@@ -1,8 +1,6 @@
 export const USER_STATUS = {
   INVITED: 'invited',
   ACTIVE: 'active',
-  BLOCKED: 'blocked',
-  DELETED: 'deleted',
 } as const;
 
 export const USER_ROLES = {

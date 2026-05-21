@@ -13,8 +13,13 @@ export interface User {
   image: string | null;
   status: Generated<UserStatus>;
   emailVerified: Generated<boolean>;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  banned: Generated<boolean>;
+  banReason: string | null;
+  banExpires: number | null;
+  isDeleted: Generated<boolean>;
+  organizationId: Selectable<Organization>['id'] | null;
+  createdAt: GeneratedAlways<Timestamp>;
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface Session {
@@ -24,8 +29,8 @@ export interface Session {
   ipAddress: string | null;
   userAgent: string | null;
   userId: Selectable<User>['id'];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: GeneratedAlways<Timestamp>;
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface Account {
@@ -40,8 +45,8 @@ export interface Account {
   refreshTokenExpiresAt: Timestamp | null;
   scope: string | null;
   password: string | null;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: GeneratedAlways<Timestamp>;
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface Verification {
@@ -49,8 +54,8 @@ export interface Verification {
   identifier: string;
   value: string;
   expiresAt: Timestamp;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: GeneratedAlways<Timestamp>;
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface Organization {
@@ -58,8 +63,8 @@ export interface Organization {
   name: string;
   isBlocked: Generated<boolean>;
   isDeleted: Generated<boolean>;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: GeneratedAlways<Timestamp>;
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface Database {

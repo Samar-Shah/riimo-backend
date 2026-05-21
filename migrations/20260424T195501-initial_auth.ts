@@ -16,10 +16,18 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn('emailVerified', 'boolean', (col) =>
       col.notNull().defaultTo(false),
     )
+    .addColumn('isDeleted', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('role', 'text', (col) => col.notNull())
+    .addColumn('banned', 'boolean', (col) => col.notNull().defaultTo(false))
+    .addColumn('banReason', 'text')
+    .addColumn('banExpires', 'integer')
     .addColumn('image', 'text')
-    .addColumn('createdAt', 'timestamptz', (col) => col.notNull())
-    .addColumn('updatedAt', 'timestamptz', (col) => col.notNull())
+    .addColumn('createdAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
+    .addColumn('updatedAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
     .execute();
 
   await db.schema
@@ -34,8 +42,12 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn('userId', 'uuid', (col) =>
       col.notNull().references('user.id').onDelete('cascade'),
     )
-    .addColumn('createdAt', 'timestamptz', (col) => col.notNull())
-    .addColumn('updatedAt', 'timestamptz', (col) => col.notNull())
+    .addColumn('createdAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
+    .addColumn('updatedAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
     .execute();
 
   await db.schema
@@ -55,8 +67,12 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn('refreshTokenExpiresAt', 'timestamptz')
     .addColumn('scope', 'text')
     .addColumn('password', 'text')
-    .addColumn('createdAt', 'timestamptz', (col) => col.notNull())
-    .addColumn('updatedAt', 'timestamptz', (col) => col.notNull())
+    .addColumn('createdAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
+    .addColumn('updatedAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
     .execute();
 
   await db.schema
@@ -67,8 +83,12 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn('identifier', 'text', (col) => col.notNull())
     .addColumn('value', 'text', (col) => col.notNull())
     .addColumn('expiresAt', 'timestamptz', (col) => col.notNull())
-    .addColumn('createdAt', 'timestamptz', (col) => col.notNull())
-    .addColumn('updatedAt', 'timestamptz', (col) => col.notNull())
+    .addColumn('createdAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
+    .addColumn('updatedAt', 'timestamptz', (col) =>
+      col.notNull().defaultTo(sql`now()`),
+    )
     .execute();
 }
 
