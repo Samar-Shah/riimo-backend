@@ -10,7 +10,12 @@ import {
   Delete,
   Req,
 } from '@nestjs/common';
-import { Roles, Session, type UserSession } from '@thallesp/nestjs-better-auth';
+import {
+  AllowAnonymous,
+  Roles,
+  Session,
+  type UserSession,
+} from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
 import { USER_ROLES } from '../constants';
 import { GetAdminsQueryDto } from './dto';
@@ -47,6 +52,12 @@ export class UserController {
   @Roles([USER_ROLES.ADMIN, USER_ROLES.ORG_ADMIN])
   async resendInvite(@Body('email') email: string) {
     return this.userService.resendInvite(email);
+  }
+
+  @Post('forgot-password')
+  @AllowAnonymous()
+  async forgotPassword(@Body('email') email: string) {
+    return this.userService.forgotPassword(email);
   }
 
   // Dummy route for Web App using Session (Cookie)
