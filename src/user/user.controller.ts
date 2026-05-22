@@ -10,12 +10,7 @@ import {
   Delete,
   Req,
 } from '@nestjs/common';
-import {
-  AllowAnonymous,
-  Roles,
-  Session,
-  type UserSession,
-} from '@thallesp/nestjs-better-auth';
+import { Roles, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
 import { USER_ROLES } from '../constants';
 import { GetAdminsQueryDto } from './dto';
