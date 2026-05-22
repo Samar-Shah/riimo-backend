@@ -58,6 +58,33 @@ export class UserService {
     return { message: 'Invite resent successfully' };
   }
 
+  async forgotPassword(email: string) {
+    const user = await this.db
+      .selectFrom('user')
+      .selectAll()
+      .where('email', '=', email)
+      .executeTakeFirst();
+
+    if (!user) throw new NotFoundException('User not found');
+    if (user.isDeleted)
+      throw new BadRequestException('This user is already deleted');
+    if (user.banned)
+      throw new BadRequestException('This user is banned, contact your admin');
+    if (!user.emailVerified)
+      throw new BadRequestException(
+        'This email is not verified, ask your admin to send you an invite again',
+      );
+
+    await auth.api.requestPasswordReset({
+      body: {
+        email,
+        redirectTo: `${process.env.REACT_APP_URL}/forgot-password`,
+      },
+    });
+
+    return { message: 'Password reset email sent successfully' };
+  }
+
   async getAdminUsers({
     page,
     pageSize,
