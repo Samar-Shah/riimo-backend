@@ -192,7 +192,7 @@ export class UserService {
     return { message: 'User edited successfully' };
   }
 
-  async deleteAdminUser(id: string) {
+  async deleteAdminUser(id: string, headers: Headers) {
     await this.db
       .updateTable('user')
       .set({ isDeleted: true, updatedAt: sql`now()` })
@@ -200,6 +200,8 @@ export class UserService {
       .where('role', '=', USER_ROLES.ADMIN)
       .where('isDeleted', '=', false)
       .executeTakeFirstOrThrow();
+
+    await auth.api.revokeUserSessions({ body: { userId: id }, headers });
 
     return { message: 'User deleted successfully' };
   }
