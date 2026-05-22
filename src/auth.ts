@@ -1,4 +1,9 @@
-import { APIError, betterAuth } from 'better-auth';
+import {
+  APIError,
+  betterAuth,
+  MiddlewareOptions,
+  type MiddlewareContext,
+} from 'better-auth';
 import { admin, bearer } from 'better-auth/plugins';
 import { dialect } from '../kysely.config';
 import { OnboardingTemplate } from './templates/OnboardingTemplate';
@@ -7,6 +12,7 @@ import { DatabaseService } from './database/database.service';
 import { ResetPasswordTemplate } from './templates/ResetPasswordTemplate';
 import { USER_STATUS } from './constants';
 import { sql } from 'kysely';
+import { createAuthMiddleware } from 'better-auth/api';
 
 const trustedOrigins = process.env.ORIGIN_LIST?.split(',') || [];
 
@@ -37,6 +43,7 @@ export const auth = betterAuth({
       },
       isDeleted: {
         type: 'boolean',
+        defaultValue: false,
         required: true,
       },
     },
@@ -47,11 +54,18 @@ export const auth = betterAuth({
     },
     trustedOrigins: (origin) => !origin, // desktop app (no origin header)
   },
-  plugins: [admin(), bearer()],
+  plugins: [
+    admin({
+      bannedUserMessage:
+        'This account is banned, contact your admin or support',
+    }),
+    bearer(),
+  ],
 
   // callbacks
   emailAndPassword: {
     enabled: true,
+    disableSignUp: true,
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 60 * 24, // 24 hours
@@ -85,7 +99,7 @@ export const auth = betterAuth({
     },
   },
 
-  // Hooks
+  // Database Hooks
   databaseHooks: {
     account: {
       create: {
@@ -105,5 +119,26 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+
+  // Hooks
+  hooks: {
+    before: createAuthMiddleware(
+      async (ctx: MiddlewareContext<MiddlewareOptions>) => {
+        if (ctx.path === '/sign-in/email') {
+          const { email } = ctx.body as { email: string };
+          const user = await dbService
+            .selectFrom('user')
+            .selectAll()
+            .where('email', '=', email)
+            .executeTakeFirst();
+
+          if (user?.isDeleted)
+            throw new APIError(400, { message: 'This account is deleted' });
+
+          return;
+        }
+      },
+    ),
   },
 });

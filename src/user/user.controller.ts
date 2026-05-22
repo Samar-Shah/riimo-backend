@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Delete,
   Req,
+  Headers,
 } from '@nestjs/common';
 import {
   AllowAnonymous,
@@ -118,8 +119,9 @@ export class UserController {
   @Roles([USER_ROLES.ADMIN])
   deleteAdminUser(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Headers() headers: Headers,
   ) {
-    return this.userService.deleteAdminUser(id);
+    return this.userService.deleteAdminUser(id, headers);
   }
 
   @Put('admins/ban/:id')
@@ -144,13 +146,13 @@ export class UserController {
   @Roles([USER_ROLES.ADMIN])
   unbanAdminUser(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Req() req: Request,
+    @Headers() headers: Headers,
   ) {
     return this.userService.toggleUserBan({
       id,
       userRole: USER_ROLES.ADMIN,
       action: 'unban',
-      headers: req.headers,
+      headers,
     });
   }
 }
