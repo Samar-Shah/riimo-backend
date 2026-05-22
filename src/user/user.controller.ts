@@ -8,17 +8,12 @@ import {
   Put,
   ParseUUIDPipe,
   Delete,
+  Req,
 } from '@nestjs/common';
-import {
-  AllowAnonymous,
-  Roles,
-  Session,
-  type UserSession,
-} from '@thallesp/nestjs-better-auth';
+import { Roles, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
 import { USER_ROLES } from '../constants';
 import { GetAdminsQueryDto } from './dto';
-import { UserStatus } from '../database/types';
 
 @Controller('user')
 export class UserController {
@@ -46,21 +41,6 @@ export class UserController {
     @Body('email') email: string,
   ) {
     return this.userService.inviteUser(name, email, USER_ROLES.SALES_REP);
-  }
-
-  @Get('get-password-setup-info/:token')
-  @AllowAnonymous()
-  async getPasswordSetupInfo(@Param('token') token: string) {
-    return this.userService.getPasswordSetupInfo(token);
-  }
-
-  @Post('setup-password')
-  @AllowAnonymous()
-  async setupPassword(
-    @Body('token') token: string,
-    @Body('password') password: string,
-  ) {
-    return this.userService.setupPassword(token, password);
   }
 
   @Post('resend-invite')
@@ -119,9 +99,8 @@ export class UserController {
   editAdminUser(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body('name') name: string,
-    @Body('status') status?: Exclude<UserStatus, 'deleted' | 'invited'>,
   ) {
-    return this.userService.editAdminUser(id, name, status);
+    return this.userService.editAdminUser(id, name);
   }
 
   @Delete('admins/:id')
@@ -130,5 +109,37 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ) {
     return this.userService.deleteAdminUser(id);
+  }
+
+  @Put('admins/ban/:id')
+  @Roles([USER_ROLES.ADMIN])
+  banAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() req: Request,
+    @Body('banReason') banReason?: string,
+    @Body('banExpires') banExpires?: number,
+  ) {
+    return this.userService.toggleUserBan({
+      id,
+      action: 'ban',
+      userRole: USER_ROLES.ADMIN,
+      banReason,
+      banExpires,
+      headers: req.headers,
+    });
+  }
+
+  @Put('admins/unban/:id')
+  @Roles([USER_ROLES.ADMIN])
+  unbanAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() req: Request,
+  ) {
+    return this.userService.toggleUserBan({
+      id,
+      userRole: USER_ROLES.ADMIN,
+      action: 'unban',
+      headers: req.headers,
+    });
   }
 }
