@@ -10,7 +10,7 @@ import { OnboardingTemplate } from './templates/OnboardingTemplate';
 import { EmailService } from './email/email.service';
 import { DatabaseService } from './database/database.service';
 import { ResetPasswordTemplate } from './templates/ResetPasswordTemplate';
-import { USER_STATUS } from './constants';
+import { DEFAULT_BANNED_MESSAGE, USER_STATUS } from './constants';
 import { sql } from 'kysely';
 import { createAuthMiddleware } from 'better-auth/api';
 
@@ -54,13 +54,7 @@ export const auth = betterAuth({
     },
     trustedOrigins: (origin) => !origin, // desktop app (no origin header)
   },
-  plugins: [
-    admin({
-      bannedUserMessage:
-        'This account is banned, contact your admin or support',
-    }),
-    bearer(),
-  ],
+  plugins: [admin({ bannedUserMessage: DEFAULT_BANNED_MESSAGE }), bearer()],
 
   // callbacks
   emailAndPassword: {
