@@ -1,18 +1,29 @@
 // Modules
 import { Module } from '@nestjs/common';
-import { AuthModule } from '@thallesp/nestjs-better-auth';
+import { AuthGuard, AuthModule } from '@thallesp/nestjs-better-auth';
 import { DatabaseModule } from './database/database.module';
 import { UserModule } from './user/user.module';
 // Controllers
 import { AppController } from './app.controller';
 // Services
 import { AppService } from './app.service';
+// Guards
+import { APP_GUARD } from '@nestjs/core';
+import { UserStatusGuard } from './common/guards/user-status.guard';
 // Configs
 import { auth } from './auth';
 
 @Module({
-  imports: [DatabaseModule, AuthModule.forRoot({ auth }), UserModule],
+  imports: [
+    DatabaseModule,
+    UserModule,
+    AuthModule.forRoot({ auth, disableGlobalAuthGuard: true }),
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: UserStatusGuard },
+  ],
 })
 export class AppModule {}

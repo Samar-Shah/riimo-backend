@@ -8,3 +8,6 @@ export const USER_ROLES = {
   ORG_ADMIN: 'org-admin',
   SALES_REP: 'sales-rep',
 } as const;
+
+export const DEFAULT_BANNED_MESSAGE =
+  'This account is banned, contact your admin or support';
