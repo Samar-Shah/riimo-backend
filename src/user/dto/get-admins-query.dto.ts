@@ -1,8 +1,22 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { USER_STATUS } from '../../constants';
-import type { UserStatus } from '../../database/types';
 
+export const ADMIN_QUERY_STATUSES = [
+  USER_STATUS.INVITED,
+  USER_STATUS.ACTIVE,
+  'deleted',
+  'banned',
+] as const;
+
+export type AdminQueryStatus = (typeof ADMIN_QUERY_STATUSES)[number];
+
+/** Plain array for class-validator @IsIn (readonly tuples can lose values in metadata) */
+export const ADMIN_QUERY_STATUS_VALUES: AdminQueryStatus[] = [
+  ...ADMIN_QUERY_STATUSES,
+];
+
+// DTO class for admins query
 export class GetAdminsQueryDto {
   @IsOptional()
   @Type(() => Number)
@@ -30,6 +44,7 @@ export class GetAdminsQueryDto {
   search?: string;
 
   @IsOptional()
-  @IsIn(Object.values(USER_STATUS))
-  status?: UserStatus;
+  @IsString()
+  @IsIn(ADMIN_QUERY_STATUS_VALUES)
+  status?: AdminQueryStatus;
 }

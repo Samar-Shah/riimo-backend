@@ -8,7 +8,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
       col.primaryKey().defaultTo(sql`uuid_generate_v4()`),
     )
     .addColumn('name', 'text', (col) => col.notNull())
-    .addColumn('isBlocked', 'boolean', (col) => col.notNull().defaultTo(false))
+    .addColumn('isBanned', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('isDeleted', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('createdAt', 'timestamptz', (col) =>
       col.notNull().defaultTo(sql`now()`),

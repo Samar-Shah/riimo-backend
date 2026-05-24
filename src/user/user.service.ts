@@ -98,7 +98,23 @@ export class UserService {
     // Build shared base with all WHERE conditions
     let base = this.db.selectFrom('user').where('role', '=', USER_ROLES.ADMIN);
 
-    if (status) base = base.where('status', '=', status);
+    switch (status) {
+      case 'deleted':
+        base = base.where('isDeleted', '=', true);
+        break;
+      case 'banned':
+        base = base.where('banned', '=', true);
+        break;
+      case 'invited':
+        base = base.where('status', '=', USER_STATUS.INVITED);
+        break;
+      case 'active':
+        base = base.where('status', '=', USER_STATUS.ACTIVE);
+        break;
+      default:
+        break;
+    }
+
     if (trimmedSearch) {
       const pattern = `%${escapeIlikePattern(trimmedSearch)}%`;
       base = base.where((eb) =>

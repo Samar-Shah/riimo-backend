@@ -12,12 +12,14 @@ import { APP_GUARD } from '@nestjs/core';
 import { UserStatusGuard } from './common/guards/user-status.guard';
 // Configs
 import { auth } from './auth';
+import { OrganizationModule } from './organization/organization.module';
 
 @Module({
   imports: [
     DatabaseModule,
     UserModule,
     AuthModule.forRoot({ auth, disableGlobalAuthGuard: true }),
+    OrganizationModule,
   ],
   controllers: [AppController],
   providers: [

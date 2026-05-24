@@ -61,7 +61,7 @@ export interface Verification {
 export interface Organization {
   id: GeneratedAlways<string>;
   name: string;
-  isBlocked: Generated<boolean>;
+  isBanned: Generated<boolean>;
   isDeleted: Generated<boolean>;
   createdAt: GeneratedAlways<Timestamp>;
   updatedAt: Generated<Timestamp>;
