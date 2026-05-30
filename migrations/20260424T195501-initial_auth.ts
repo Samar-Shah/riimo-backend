@@ -20,7 +20,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn('role', 'text', (col) => col.notNull())
     .addColumn('banned', 'boolean', (col) => col.notNull().defaultTo(false))
     .addColumn('banReason', 'text')
-    .addColumn('banExpires', 'integer')
+    .addColumn('banExpires', 'timestamptz')
     .addColumn('image', 'text')
     .addColumn('createdAt', 'timestamptz', (col) =>
       col.notNull().defaultTo(sql`now()`),

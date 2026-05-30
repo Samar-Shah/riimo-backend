@@ -106,12 +106,6 @@ export class UserController {
     return this.userService.getUsersByRole(queryDto, USER_ROLES.ORG_ADMIN);
   }
 
-  @Get('admins-stats')
-  @Roles([USER_ROLES.ADMIN])
-  getAdminStats() {
-    return this.userService.getAdminStats();
-  }
-
   @Put('admins/:id')
   @Roles([USER_ROLES.ADMIN])
   editAdminUser(

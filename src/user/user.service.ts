@@ -130,7 +130,7 @@ export class UserService {
     }
 
     // Run count and data queries in parallel
-    const [{ count }, data] = await Promise.all([
+    const [{ count }, data, stats] = await Promise.all([
       base
         .select((eb) => eb.fn.countAll<string>().as('count'))
         .executeTakeFirstOrThrow(),
@@ -151,12 +151,13 @@ export class UserService {
         .limit(pageSize)
         .offset((page - 1) * pageSize)
         .execute(),
+      this.getUserStats(role),
     ]);
 
     const total = Number(count);
 
     return {
-      data,
+      data: { admins: data, stats },
       meta: {
         page,
         pageSize,
@@ -166,10 +167,10 @@ export class UserService {
     };
   }
 
-  async getAdminStats() {
+  async getUserStats(role: Role) {
     const stats = await this.db
       .selectFrom('user')
-      .where('role', '=', USER_ROLES.ADMIN)
+      .where('role', '=', role)
       .select((eb) => [
         eb.fn.countAll<number>().as('total'),
         eb.fn
@@ -241,7 +242,7 @@ export class UserService {
     userRole: Role;
     action: 'ban' | 'unban';
     banReason?: string;
-    banExpires?: number;
+    banExpires?: number; // number of days
     headers: Headers;
   }) {
     const user = await this.db
@@ -260,7 +261,7 @@ export class UserService {
         body: {
           userId: id,
           ...(banReason && { banReason }),
-          ...(banExpires && { banExpiresIn: banExpires }),
+          ...(banExpires && { banExpiresIn: banExpires * 24 * 60 * 60 }),
         },
         headers,
       });

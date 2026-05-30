@@ -15,7 +15,7 @@ export interface User {
   emailVerified: Generated<boolean>;
   banned: Generated<boolean>;
   banReason: string | null;
-  banExpires: number | null;
+  banExpires: Timestamp | null;
   isDeleted: Generated<boolean>;
   organizationId: Selectable<Organization>['id'] | null;
   createdAt: GeneratedAlways<Timestamp>;
