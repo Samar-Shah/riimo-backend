@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -52,5 +53,13 @@ export class OrganizationController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ) {
     return this.organizationService.toggleOrganizationBan(id, false);
+  }
+
+  @Delete(':id')
+  @Roles([USER_ROLES.ADMIN])
+  deleteOrganization(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
+    return this.organizationService.deleteOrganization(id);
   }
 }

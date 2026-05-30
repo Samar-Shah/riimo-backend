@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { GetAdminsQueryDto } from './dto';
+import { GetUsersByRoleQueryDto } from './dto';
 import { escapeIlikePattern } from '../utils';
 import { auth } from '../auth';
 
@@ -85,18 +85,25 @@ export class UserService {
     return { message: 'Password reset email sent successfully' };
   }
 
-  async getAdminUsers({
-    page,
-    pageSize,
-    status,
-    search,
-    sortBy,
-    sortOrder,
-  }: GetAdminsQueryDto) {
+  async getUsersByRole(
+    {
+      page,
+      pageSize,
+      status,
+      search,
+      sortBy,
+      sortOrder,
+      organizationId,
+    }: GetUsersByRoleQueryDto,
+    role: Role,
+  ) {
     const trimmedSearch = search?.trim() ?? '';
 
     // Build shared base with all WHERE conditions
-    let base = this.db.selectFrom('user').where('role', '=', USER_ROLES.ADMIN);
+    let base = this.db.selectFrom('user').where('role', '=', role);
+
+    if (organizationId)
+      base = base.where('organizationId', '=', organizationId);
 
     switch (status) {
       case 'deleted':

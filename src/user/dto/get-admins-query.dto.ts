@@ -1,23 +1,31 @@
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { USER_STATUS } from '../../constants';
 
-export const ADMIN_QUERY_STATUSES = [
+export const USER_ROLE_QUERY_STATUSES = [
   USER_STATUS.INVITED,
   USER_STATUS.ACTIVE,
   'deleted',
   'banned',
 ] as const;
 
-export type AdminQueryStatus = (typeof ADMIN_QUERY_STATUSES)[number];
+export type UserRoleQueryStatus = (typeof USER_ROLE_QUERY_STATUSES)[number];
 
 /** Plain array for class-validator @IsIn (readonly tuples can lose values in metadata) */
-export const ADMIN_QUERY_STATUS_VALUES: AdminQueryStatus[] = [
-  ...ADMIN_QUERY_STATUSES,
+export const USER_ROLE_QUERY_STATUS_VALUES: UserRoleQueryStatus[] = [
+  ...USER_ROLE_QUERY_STATUSES,
 ];
 
 // DTO class for admins query
-export class GetAdminsQueryDto {
+export class GetUsersByRoleQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -45,6 +53,10 @@ export class GetAdminsQueryDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(ADMIN_QUERY_STATUS_VALUES)
-  status?: AdminQueryStatus;
+  @IsIn(USER_ROLE_QUERY_STATUS_VALUES)
+  status?: UserRoleQueryStatus;
+
+  @IsOptional()
+  @IsUUID('4')
+  organizationId?: string;
 }
