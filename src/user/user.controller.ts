@@ -19,7 +19,7 @@ import {
 } from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
 import { USER_ROLES } from '../constants';
-import { GetAdminsQueryDto } from './dto';
+import { GetUsersByRoleQueryDto } from './dto';
 
 @Controller('user')
 export class UserController {
@@ -96,14 +96,14 @@ export class UserController {
 
   @Get('admins')
   @Roles([USER_ROLES.ADMIN])
-  getAdminUsers(@Query() queryDto: GetAdminsQueryDto) {
-    return this.userService.getAdminUsers(queryDto);
+  getAdminUsers(@Query() queryDto: GetUsersByRoleQueryDto) {
+    return this.userService.getUsersByRole(queryDto, USER_ROLES.ADMIN);
   }
 
-  @Get('admins-stats')
-  @Roles([USER_ROLES.ADMIN])
-  getAdminStats() {
-    return this.userService.getAdminStats();
+  @Get('org-admins')
+  @Roles([USER_ROLES.ORG_ADMIN])
+  getOrgAdminUsers(@Query() queryDto: GetUsersByRoleQueryDto) {
+    return this.userService.getUsersByRole(queryDto, USER_ROLES.ORG_ADMIN);
   }
 
   @Put('admins/:id')

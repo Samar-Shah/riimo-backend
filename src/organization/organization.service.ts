@@ -151,4 +151,28 @@ export class OrganizationService {
         () => new NotFoundException('Organization not found'),
       );
   }
+
+  async deleteOrganization(id: string) {
+    await this.db.transaction().execute(async (tx) => {
+      await tx
+        .updateTable('organization')
+        .set({ isDeleted: true, updatedAt: sql`now()` })
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(
+          () => new NotFoundException('Organization not found'),
+        );
+
+      const userIds = await tx
+        .updateTable('user')
+        .set({ isDeleted: true, updatedAt: sql`now()` })
+        .where('organizationId', '=', id)
+        .returning('id')
+        .execute();
+
+      await tx
+        .deleteFrom('session')
+        .where('userId', 'in', [...userIds.map((user) => user.id)])
+        .execute();
+    });
+  }
 }

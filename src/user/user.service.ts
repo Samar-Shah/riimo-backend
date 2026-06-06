@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { GetAdminsQueryDto } from './dto';
+import { GetUsersByRoleQueryDto } from './dto';
 import { escapeIlikePattern } from '../utils';
 import { auth } from '../auth';
 
@@ -85,18 +85,25 @@ export class UserService {
     return { message: 'Password reset email sent successfully' };
   }
 
-  async getAdminUsers({
-    page,
-    pageSize,
-    status,
-    search,
-    sortBy,
-    sortOrder,
-  }: GetAdminsQueryDto) {
+  async getUsersByRole(
+    {
+      page,
+      pageSize,
+      status,
+      search,
+      sortBy,
+      sortOrder,
+      organizationId,
+    }: GetUsersByRoleQueryDto,
+    role: Role,
+  ) {
     const trimmedSearch = search?.trim() ?? '';
 
     // Build shared base with all WHERE conditions
-    let base = this.db.selectFrom('user').where('role', '=', USER_ROLES.ADMIN);
+    let base = this.db.selectFrom('user').where('role', '=', role);
+
+    if (organizationId)
+      base = base.where('organizationId', '=', organizationId);
 
     switch (status) {
       case 'deleted':
@@ -123,7 +130,7 @@ export class UserService {
     }
 
     // Run count and data queries in parallel
-    const [{ count }, data] = await Promise.all([
+    const [{ count }, data, stats] = await Promise.all([
       base
         .select((eb) => eb.fn.countAll<string>().as('count'))
         .executeTakeFirstOrThrow(),
@@ -144,12 +151,13 @@ export class UserService {
         .limit(pageSize)
         .offset((page - 1) * pageSize)
         .execute(),
+      this.getUserStats(role),
     ]);
 
     const total = Number(count);
 
     return {
-      data,
+      data: { admins: data, stats },
       meta: {
         page,
         pageSize,
@@ -159,10 +167,10 @@ export class UserService {
     };
   }
 
-  async getAdminStats() {
+  async getUserStats(role: Role) {
     const stats = await this.db
       .selectFrom('user')
-      .where('role', '=', USER_ROLES.ADMIN)
+      .where('role', '=', role)
       .select((eb) => [
         eb.fn.countAll<number>().as('total'),
         eb.fn
@@ -234,7 +242,7 @@ export class UserService {
     userRole: Role;
     action: 'ban' | 'unban';
     banReason?: string;
-    banExpires?: number;
+    banExpires?: number; // number of days
     headers: Headers;
   }) {
     const user = await this.db
@@ -253,7 +261,7 @@ export class UserService {
         body: {
           userId: id,
           ...(banReason && { banReason }),
-          ...(banExpires && { banExpiresIn: banExpires }),
+          ...(banExpires && { banExpiresIn: banExpires * 24 * 60 * 60 }),
         },
         headers,
       });
