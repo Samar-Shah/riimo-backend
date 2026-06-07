@@ -41,6 +41,10 @@ export const auth = betterAuth({
         type: 'string',
         required: true,
       },
+      organizationId: {
+        type: 'string',
+        required: false,
+      },
       isDeleted: {
         type: 'boolean',
         defaultValue: false,

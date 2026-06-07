@@ -1,13 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { USER_STATUS } from '../../constants';
 
 export const USER_ROLE_QUERY_STATUSES = [
@@ -55,8 +47,4 @@ export class GetUsersByRoleQueryDto {
   @IsString()
   @IsIn(USER_ROLE_QUERY_STATUS_VALUES)
   status?: UserRoleQueryStatus;
-
-  @IsOptional()
-  @IsUUID('4')
-  organizationId?: string;
 }
