@@ -36,8 +36,15 @@ export class UserController {
   async inviteOrgAdmin(
     @Body('name') name: string,
     @Body('email') email: string,
+    @Body('organizationId', new ParseUUIDPipe({ version: '4' }))
+    organizationId: string,
   ) {
-    return this.userService.inviteUser(name, email, USER_ROLES.ORG_ADMIN);
+    return this.userService.inviteUser(
+      name,
+      email,
+      USER_ROLES.ORG_ADMIN,
+      organizationId,
+    );
   }
 
   @Post('invite-sales-rep')
@@ -45,8 +52,15 @@ export class UserController {
   async inviteSalesRep(
     @Body('name') name: string,
     @Body('email') email: string,
+    @Body('organizationId', new ParseUUIDPipe({ version: '4' }))
+    organizationId: string,
   ) {
-    return this.userService.inviteUser(name, email, USER_ROLES.SALES_REP);
+    return this.userService.inviteUser(
+      name,
+      email,
+      USER_ROLES.SALES_REP,
+      organizationId,
+    );
   }
 
   @Post('resend-invite')
@@ -100,10 +114,18 @@ export class UserController {
     return this.userService.getUsersByRole(queryDto, USER_ROLES.ADMIN);
   }
 
-  @Get('org-admins')
-  @Roles([USER_ROLES.ORG_ADMIN])
-  getOrgAdminUsers(@Query() queryDto: GetUsersByRoleQueryDto) {
-    return this.userService.getUsersByRole(queryDto, USER_ROLES.ORG_ADMIN);
+  @Get('org-admins/:organizationId')
+  @Roles([USER_ROLES.ADMIN])
+  getOrgAdminUsers(
+    @Param('organizationId', new ParseUUIDPipe({ version: '4' }))
+    organizationId: string,
+    @Query() queryDto: GetUsersByRoleQueryDto,
+  ) {
+    return this.userService.getUsersByRole(
+      queryDto,
+      USER_ROLES.ORG_ADMIN,
+      organizationId,
+    );
   }
 
   @Put('admins/:id')
@@ -112,7 +134,16 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body('name') name: string,
   ) {
-    return this.userService.editAdminUser(id, name);
+    return this.userService.editUser(id, name, USER_ROLES.ADMIN);
+  }
+
+  @Put('org-admins/:id')
+  @Roles([USER_ROLES.ADMIN])
+  editOrgAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body('name') name: string,
+  ) {
+    return this.userService.editUser(id, name, USER_ROLES.ORG_ADMIN);
   }
 
   @Delete('admins/:id')
@@ -121,7 +152,16 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Headers() headers: Headers,
   ) {
-    return this.userService.deleteAdminUser(id, headers);
+    return this.userService.deleteUser(id, headers, USER_ROLES.ADMIN);
+  }
+
+  @Delete('org-admins/:id')
+  @Roles([USER_ROLES.ADMIN])
+  deleteOrgAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Headers() headers: Headers,
+  ) {
+    return this.userService.deleteUser(id, headers, USER_ROLES.ORG_ADMIN);
   }
 
   @Put('admins/ban/:id')
@@ -151,6 +191,38 @@ export class UserController {
     return this.userService.toggleUserBan({
       id,
       userRole: USER_ROLES.ADMIN,
+      action: 'unban',
+      headers,
+    });
+  }
+
+  @Put('org-admins/ban/:id')
+  @Roles([USER_ROLES.ADMIN])
+  banOrgAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() req: Request,
+    @Body('banReason') banReason?: string,
+    @Body('banExpires') banExpires?: number,
+  ) {
+    return this.userService.toggleUserBan({
+      id,
+      action: 'ban',
+      userRole: USER_ROLES.ORG_ADMIN,
+      banReason,
+      banExpires,
+      headers: req.headers,
+    });
+  }
+
+  @Put('org-admins/unban/:id')
+  @Roles([USER_ROLES.ADMIN])
+  unbanOrgAdminUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Headers() headers: Headers,
+  ) {
+    return this.userService.toggleUserBan({
+      id,
+      userRole: USER_ROLES.ORG_ADMIN,
       action: 'unban',
       headers,
     });

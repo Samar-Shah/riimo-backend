@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import type { Role } from '../database/types';
-import { USER_ROLES, USER_STATUS } from '../constants';
+import { USER_STATUS } from '../constants';
 import {
   Injectable,
   BadRequestException,
@@ -15,7 +15,12 @@ import { auth } from '../auth';
 export class UserService {
   constructor(private db: DatabaseService) {}
 
-  async inviteUser(name: string, email: string, role: Role) {
+  async inviteUser(
+    name: string,
+    email: string,
+    role: Role,
+    organizationId?: string,
+  ) {
     const existingUser = await this.db
       .selectFrom('user')
       .selectAll()
@@ -26,7 +31,13 @@ export class UserService {
       throw new BadRequestException('User already exists');
     }
 
-    await auth.api.createUser({ body: { name, email, data: { role } } });
+    await auth.api.createUser({
+      body: {
+        name,
+        email,
+        data: { role, ...(organizationId && { organizationId }) },
+      },
+    });
 
     await auth.api.requestPasswordReset({
       body: {
@@ -93,9 +104,9 @@ export class UserService {
       search,
       sortBy,
       sortOrder,
-      organizationId,
     }: GetUsersByRoleQueryDto,
     role: Role,
+    organizationId?: string,
   ) {
     const trimmedSearch = search?.trim() ?? '';
 
@@ -151,13 +162,13 @@ export class UserService {
         .limit(pageSize)
         .offset((page - 1) * pageSize)
         .execute(),
-      this.getUserStats(role),
+      this.getUserStats(role, organizationId),
     ]);
 
     const total = Number(count);
 
     return {
-      data: { admins: data, stats },
+      data: { users: data, stats },
       meta: {
         page,
         pageSize,
@@ -167,24 +178,32 @@ export class UserService {
     };
   }
 
-  async getUserStats(role: Role) {
+  async getUserStats(role: Role, organizationId?: string) {
     const stats = await this.db
       .selectFrom('user')
       .where('role', '=', role)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .select((eb) => [
         eb.fn.countAll<number>().as('total'),
         eb.fn
           .count<number>('id')
+          .filterWhere('isDeleted', '=', false)
+          .filterWhere('banned', '=', false)
           .filterWhere('status', '=', USER_STATUS.INVITED)
           .as('invited'),
         eb.fn
           .count<number>('id')
+          .filterWhere('isDeleted', '=', false)
+          .filterWhere('banned', '=', false)
           .filterWhere('status', '=', USER_STATUS.ACTIVE)
           .as('active'),
         eb.fn
           .count<number>('id')
+          .filterWhere('isDeleted', '=', false)
           .filterWhere('banned', '=', true)
-          .as('blocked'),
+          .as('banned'),
         eb.fn
           .count<number>('id')
           .filterWhere('isDeleted', '=', true)
@@ -196,12 +215,12 @@ export class UserService {
       total: Number(stats.total),
       invited: Number(stats.invited),
       active: Number(stats.active),
-      blocked: Number(stats.blocked),
+      banned: Number(stats.banned),
       deleted: Number(stats.deleted),
     };
   }
 
-  async editAdminUser(id: string, name: string) {
+  async editUser(id: string, name: string, role: Role) {
     await this.db
       .updateTable('user')
       .set({
@@ -209,19 +228,19 @@ export class UserService {
         updatedAt: sql`now()`,
       })
       .where('id', '=', id)
-      .where('role', '=', USER_ROLES.ADMIN)
+      .where('role', '=', role)
       .where('isDeleted', '=', false)
       .executeTakeFirstOrThrow(() => new NotFoundException('User not found'));
 
     return { message: 'User edited successfully' };
   }
 
-  async deleteAdminUser(id: string, headers: Headers) {
+  async deleteUser(id: string, headers: Headers, role: Role) {
     await this.db
       .updateTable('user')
       .set({ isDeleted: true, updatedAt: sql`now()` })
       .where('id', '=', id)
-      .where('role', '=', USER_ROLES.ADMIN)
+      .where('role', '=', role)
       .where('isDeleted', '=', false)
       .executeTakeFirstOrThrow();
 
@@ -235,7 +254,7 @@ export class UserService {
     userRole,
     action,
     banReason,
-    banExpires,
+    // banExpires,
     headers,
   }: {
     id: string;
@@ -261,7 +280,8 @@ export class UserService {
         body: {
           userId: id,
           ...(banReason && { banReason }),
-          ...(banExpires && { banExpiresIn: banExpires * 24 * 60 * 60 }),
+          // TODO: Will implement this later
+          // ...(banExpires && { banExpiresIn: banExpires * 24 * 60 * 60 }),
         },
         headers,
       });

@@ -143,13 +143,44 @@ export class OrganizationService {
   }
 
   async toggleOrganizationBan(id: string, isBanned: boolean) {
-    await this.db
-      .updateTable('organization')
-      .set({ isBanned, updatedAt: sql`now()` })
-      .where('id', '=', id)
-      .executeTakeFirstOrThrow(
-        () => new NotFoundException('Organization not found'),
-      );
+    await this.db.transaction().execute(async (tx) => {
+      await tx
+        .updateTable('organization')
+        .set({
+          isBanned,
+          updatedAt: sql`now()`,
+        })
+        .where('id', '=', id)
+        .executeTakeFirstOrThrow(
+          () => new NotFoundException('Organization not found'),
+        );
+
+      const userIds = await tx
+        .updateTable('user')
+        .set({
+          banned: isBanned,
+          banExpires: null,
+          banReason: isBanned ? 'Organization banned by admin' : null,
+          updatedAt: sql`now()`,
+        })
+        .where('organizationId', '=', id)
+        .returning('id')
+        .execute();
+
+      if (isBanned && userIds.length > 0)
+        await tx
+          .deleteFrom('session')
+          .where(
+            'userId',
+            'in',
+            userIds.map((user) => user.id),
+          )
+          .execute();
+    });
+
+    return {
+      message: `Organization ${isBanned ? 'banned' : 'unbanned'} successfully`,
+    };
   }
 
   async deleteOrganization(id: string) {
@@ -169,10 +200,15 @@ export class OrganizationService {
         .returning('id')
         .execute();
 
-      await tx
-        .deleteFrom('session')
-        .where('userId', 'in', [...userIds.map((user) => user.id)])
-        .execute();
+      if (userIds.length > 0)
+        await tx
+          .deleteFrom('session')
+          .where(
+            'userId',
+            'in',
+            userIds.map((user) => user.id),
+          )
+          .execute();
     });
   }
 }
