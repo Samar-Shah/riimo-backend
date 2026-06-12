@@ -227,4 +227,9 @@ export class UserController {
       headers,
     });
   }
+
+  @Put('me')
+  editProfile(@Session() session: UserSession, @Body('name') name: string) {
+    return this.userService.editProfile(session, name);
+  }
 }
