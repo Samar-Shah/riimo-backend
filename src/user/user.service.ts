@@ -10,6 +10,7 @@ import { DatabaseService } from '../database/database.service';
 import { GetUsersByRoleQueryDto } from './dto';
 import { escapeIlikePattern } from '../utils';
 import { auth } from '../auth';
+import { UserSession } from '@thallesp/nestjs-better-auth';
 
 @Injectable()
 export class UserService {
@@ -293,5 +294,19 @@ export class UserService {
       headers,
     });
     return { message: `User unbanned successfully` };
+  }
+
+  async editProfile(session: UserSession, name: string) {
+    await this.db
+      .updateTable('user')
+      .set({
+        name,
+        updatedAt: sql`now()`,
+      })
+      .where('id', '=', session.user.id)
+      .where('isDeleted', '=', false)
+      .executeTakeFirstOrThrow(() => new NotFoundException('User not found'));
+
+    return { message: 'User edited successfully', session };
   }
 }
