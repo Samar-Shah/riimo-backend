@@ -13,6 +13,7 @@ import { UserStatusGuard } from './common/guards/user-status.guard';
 // Configs
 import { auth } from './auth';
 import { OrganizationModule } from './organization/organization.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { OrganizationModule } from './organization/organization.module';
     UserModule,
     AuthModule.forRoot({ auth, disableGlobalAuthGuard: true }),
     OrganizationModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

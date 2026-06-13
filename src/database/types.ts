@@ -1,7 +1,7 @@
 import { ColumnType, Generated, GeneratedAlways, Selectable } from 'kysely';
 import { USER_ROLES, USER_STATUS } from '../constants';
 
-type Timestamp = ColumnType<Date, Date | string, Date | string>;
+export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export type Role = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
