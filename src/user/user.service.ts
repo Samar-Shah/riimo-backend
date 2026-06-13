@@ -163,7 +163,7 @@ export class UserService {
         .limit(pageSize)
         .offset((page - 1) * pageSize)
         .execute(),
-      this.getUserStats(role, organizationId),
+      this.getUserStats({ role, organizationId }),
     ]);
 
     const total = Number(count);
@@ -179,10 +179,19 @@ export class UserService {
     };
   }
 
-  async getUserStats(role: Role, organizationId?: string) {
+  async getUserStats({
+    role,
+    excludeRole,
+    organizationId,
+  }: {
+    role?: Role;
+    excludeRole?: Role;
+    organizationId?: string;
+  }) {
     const stats = await this.db
       .selectFrom('user')
-      .where('role', '=', role)
+      .$if(!!role, (qb) => qb.where('role', '=', role!))
+      .$if(!!excludeRole, (qb) => qb.where('role', '!=', excludeRole!))
       .$if(!!organizationId, (qb) =>
         qb.where('organizationId', '=', organizationId!),
       )
