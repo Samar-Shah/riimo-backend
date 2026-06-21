@@ -13,6 +13,8 @@ import { ResetPasswordTemplate } from './templates/ResetPasswordTemplate';
 import { DEFAULT_BANNED_MESSAGE, USER_STATUS } from './constants';
 import { sql } from 'kysely';
 import { createAuthMiddleware } from 'better-auth/api';
+import type { UserSession } from '@thallesp/nestjs-better-auth';
+import { ac, admin as adminRole, orgAdmin } from './permissions';
 
 const trustedOrigins = process.env.ORIGIN_LIST?.split(',') || [];
 
@@ -50,6 +52,10 @@ export const auth = betterAuth({
         defaultValue: false,
         required: true,
       },
+      isTopRep: {
+        type: 'boolean',
+        defaultValue: false,
+      },
     },
   },
   advanced: {
@@ -58,7 +64,15 @@ export const auth = betterAuth({
     },
     trustedOrigins: (origin) => !origin, // desktop app (no origin header)
   },
-  plugins: [admin({ bannedUserMessage: DEFAULT_BANNED_MESSAGE }), bearer()],
+  plugins: [
+    admin({
+      bannedUserMessage: DEFAULT_BANNED_MESSAGE,
+      ac,
+      roles: { admin: adminRole, 'org-admin': orgAdmin },
+      adminRoles: ['admin', 'org-admin'],
+    }),
+    bearer(),
+  ],
 
   // callbacks
   emailAndPassword: {
@@ -140,3 +154,5 @@ export const auth = betterAuth({
     ),
   },
 });
+
+export type AppSession = UserSession<typeof auth>;

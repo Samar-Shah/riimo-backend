@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import type { Role } from '../database/types';
-import { USER_STATUS } from '../constants';
+import { USER_STATUS, USER_ROLES } from '../constants';
 import {
   Injectable,
   BadRequestException,
@@ -21,6 +21,7 @@ export class UserService {
     email: string,
     role: Role,
     organizationId?: string,
+    isTopRep?: boolean,
   ) {
     const existingUser = await this.db
       .selectFrom('user')
@@ -36,7 +37,11 @@ export class UserService {
       body: {
         name,
         email,
-        data: { role, ...(organizationId && { organizationId }) },
+        data: {
+          role,
+          ...(organizationId && { organizationId }),
+          ...(isTopRep && { isTopRep }),
+        },
       },
     });
 
@@ -155,6 +160,7 @@ export class UserService {
           'isDeleted',
           'banned',
           'banReason',
+          'isTopRep',
           'banExpires',
           'createdAt',
           'updatedAt',
@@ -188,6 +194,8 @@ export class UserService {
     excludeRole?: Role;
     organizationId?: string;
   }) {
+    const isSalesRep = role === USER_ROLES.SALES_REP;
+
     const stats = await this.db
       .selectFrom('user')
       .$if(!!role, (qb) => qb.where('role', '=', role!))
@@ -219,6 +227,15 @@ export class UserService {
           .filterWhere('isDeleted', '=', true)
           .as('deleted'),
       ])
+      .$if(isSalesRep, (qb) =>
+        qb.select((eb) =>
+          eb.fn
+            .count<number>('id')
+            .filterWhere('isDeleted', '=', false)
+            .filterWhere('isTopRep', '=', true)
+            .as('topReps'),
+        ),
+      )
       .executeTakeFirstOrThrow();
 
     return {
@@ -227,31 +244,61 @@ export class UserService {
       active: Number(stats.active),
       banned: Number(stats.banned),
       deleted: Number(stats.deleted),
+      ...(isSalesRep && { topReps: Number(stats.topReps) }),
     };
   }
 
-  async editUser(id: string, name: string, role: Role) {
+  async editUser({
+    id,
+    name,
+    role,
+    isTopRep,
+    organizationId,
+  }: {
+    id: string;
+    name: string;
+    role: Role;
+    isTopRep?: boolean;
+    organizationId?: string;
+  }) {
     await this.db
       .updateTable('user')
       .set({
         name,
         updatedAt: sql`now()`,
+        ...(role === USER_ROLES.SALES_REP && { isTopRep }),
       })
       .where('id', '=', id)
       .where('role', '=', role)
       .where('isDeleted', '=', false)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .executeTakeFirstOrThrow(() => new NotFoundException('User not found'));
 
     return { message: 'User edited successfully' };
   }
 
-  async deleteUser(id: string, headers: Headers, role: Role) {
+  async deleteUser({
+    id,
+    headers,
+    role,
+    organizationId,
+  }: {
+    id: string;
+    headers: Headers;
+    role: Role;
+    organizationId?: string;
+  }) {
     await this.db
       .updateTable('user')
       .set({ isDeleted: true, updatedAt: sql`now()` })
       .where('id', '=', id)
       .where('role', '=', role)
       .where('isDeleted', '=', false)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .executeTakeFirstOrThrow();
 
     await auth.api.revokeUserSessions({ body: { userId: id }, headers });
@@ -265,6 +312,7 @@ export class UserService {
     action,
     banReason,
     // banExpires,
+    organizationId,
     headers,
   }: {
     id: string;
@@ -272,6 +320,7 @@ export class UserService {
     action: 'ban' | 'unban';
     banReason?: string;
     banExpires?: number; // number of days
+    organizationId?: string;
     headers: Headers;
   }) {
     const user = await this.db
@@ -279,6 +328,9 @@ export class UserService {
       .selectAll()
       .where('id', '=', id)
       .where('role', '=', userRole)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .executeTakeFirstOrThrow();
 
     if (!user) throw new NotFoundException('User not found');
