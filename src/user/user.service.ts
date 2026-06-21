@@ -253,11 +253,13 @@ export class UserService {
     name,
     role,
     isTopRep,
+    organizationId,
   }: {
     id: string;
     name: string;
     role: Role;
     isTopRep?: boolean;
+    organizationId?: string;
   }) {
     await this.db
       .updateTable('user')
@@ -269,18 +271,34 @@ export class UserService {
       .where('id', '=', id)
       .where('role', '=', role)
       .where('isDeleted', '=', false)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .executeTakeFirstOrThrow(() => new NotFoundException('User not found'));
 
     return { message: 'User edited successfully' };
   }
 
-  async deleteUser(id: string, headers: Headers, role: Role) {
+  async deleteUser({
+    id,
+    headers,
+    role,
+    organizationId,
+  }: {
+    id: string;
+    headers: Headers;
+    role: Role;
+    organizationId?: string;
+  }) {
     await this.db
       .updateTable('user')
       .set({ isDeleted: true, updatedAt: sql`now()` })
       .where('id', '=', id)
       .where('role', '=', role)
       .where('isDeleted', '=', false)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .executeTakeFirstOrThrow();
 
     await auth.api.revokeUserSessions({ body: { userId: id }, headers });
@@ -294,6 +312,7 @@ export class UserService {
     action,
     banReason,
     // banExpires,
+    organizationId,
     headers,
   }: {
     id: string;
@@ -301,6 +320,7 @@ export class UserService {
     action: 'ban' | 'unban';
     banReason?: string;
     banExpires?: number; // number of days
+    organizationId?: string;
     headers: Headers;
   }) {
     const user = await this.db
@@ -308,6 +328,9 @@ export class UserService {
       .selectAll()
       .where('id', '=', id)
       .where('role', '=', userRole)
+      .$if(!!organizationId, (qb) =>
+        qb.where('organizationId', '=', organizationId!),
+      )
       .executeTakeFirstOrThrow();
 
     if (!user) throw new NotFoundException('User not found');

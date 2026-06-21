@@ -162,12 +162,14 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body('name') name: string,
     @Body('isTopRep') isTopRep: boolean,
+    @Session() session: AppSession,
   ) {
     return this.userService.editUser({
       id,
       name,
       role: USER_ROLES.SALES_REP,
       isTopRep,
+      organizationId: session.user.organizationId ?? undefined,
     });
   }
 
@@ -177,7 +179,7 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Headers() headers: Headers,
   ) {
-    return this.userService.deleteUser(id, headers, USER_ROLES.ADMIN);
+    return this.userService.deleteUser({ id, headers, role: USER_ROLES.ADMIN });
   }
 
   @Delete('org-admins/:id')
@@ -186,7 +188,26 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Headers() headers: Headers,
   ) {
-    return this.userService.deleteUser(id, headers, USER_ROLES.ORG_ADMIN);
+    return this.userService.deleteUser({
+      id,
+      headers,
+      role: USER_ROLES.ORG_ADMIN,
+    });
+  }
+
+  @Delete('sales-reps/:id')
+  @Roles([USER_ROLES.ORG_ADMIN])
+  deleteSalesRepUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Headers() headers: Headers,
+    @Session() session: AppSession,
+  ) {
+    return this.userService.deleteUser({
+      id,
+      headers,
+      role: USER_ROLES.SALES_REP,
+      organizationId: session.user.organizationId ?? undefined,
+    });
   }
 
   @Put('admins/ban/:id')
@@ -258,6 +279,7 @@ export class UserController {
   banSalesRepUser(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Session() session: AppSession,
     @Body('banReason') banReason?: string,
     @Body('banExpires') banExpires?: number,
   ) {
@@ -267,6 +289,7 @@ export class UserController {
       userRole: USER_ROLES.SALES_REP,
       banReason,
       banExpires,
+      organizationId: session.user.organizationId ?? undefined,
       headers: req.headers,
     });
   }
@@ -275,12 +298,14 @@ export class UserController {
   @Roles([USER_ROLES.ORG_ADMIN])
   unbanSalesRepUser(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Session() session: AppSession,
     @Headers() headers: Headers,
   ) {
     return this.userService.toggleUserBan({
       id,
       userRole: USER_ROLES.SALES_REP,
       action: 'unban',
+      organizationId: session.user.organizationId ?? undefined,
       headers,
     });
   }
