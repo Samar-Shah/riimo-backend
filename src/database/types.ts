@@ -17,6 +17,7 @@ export interface User {
   banReason: string | null;
   banExpires: Timestamp | null;
   isDeleted: Generated<boolean>;
+  isTopRep: Generated<boolean>;
   organizationId: Selectable<Organization>['id'] | null;
   createdAt: GeneratedAlways<Timestamp>;
   updatedAt: Generated<Timestamp>;

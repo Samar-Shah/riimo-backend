@@ -13,6 +13,7 @@ import { ResetPasswordTemplate } from './templates/ResetPasswordTemplate';
 import { DEFAULT_BANNED_MESSAGE, USER_STATUS } from './constants';
 import { sql } from 'kysely';
 import { createAuthMiddleware } from 'better-auth/api';
+import type { UserSession } from '@thallesp/nestjs-better-auth';
 
 const trustedOrigins = process.env.ORIGIN_LIST?.split(',') || [];
 
@@ -49,6 +50,10 @@ export const auth = betterAuth({
         type: 'boolean',
         defaultValue: false,
         required: true,
+      },
+      isTopRep: {
+        type: 'boolean',
+        defaultValue: false,
       },
     },
   },
@@ -140,3 +145,5 @@ export const auth = betterAuth({
     ),
   },
 });
+
+export type AppSession = UserSession<typeof auth>;

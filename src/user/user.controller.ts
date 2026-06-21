@@ -11,13 +11,9 @@ import {
   Req,
   Headers,
 } from '@nestjs/common';
-import {
-  AllowAnonymous,
-  Roles,
-  Session,
-  type UserSession,
-} from '@thallesp/nestjs-better-auth';
+import { AllowAnonymous, Roles, Session } from '@thallesp/nestjs-better-auth';
 import { UserService } from './user.service';
+import type { AppSession } from '../auth';
 import { USER_ROLES } from '../constants';
 import { GetUsersByRoleQueryDto } from './dto';
 
@@ -52,14 +48,15 @@ export class UserController {
   async inviteSalesRep(
     @Body('name') name: string,
     @Body('email') email: string,
-    @Body('organizationId', new ParseUUIDPipe({ version: '4' }))
-    organizationId: string,
+    @Body('isTopRep') isTopRep: boolean = false,
+    @Session() session: AppSession,
   ) {
     return this.userService.inviteUser(
       name,
       email,
       USER_ROLES.SALES_REP,
-      organizationId,
+      session.user.organizationId ?? undefined,
+      isTopRep,
     );
   }
 
@@ -77,7 +74,7 @@ export class UserController {
 
   // Dummy route for Web App using Session (Cookie)
   @Get('web-profile')
-  getWebProfile(@Session() session: UserSession) {
+  getWebProfile(@Session() session: AppSession) {
     return {
       message: 'This is a session-protected route',
       user: session.user,
@@ -85,13 +82,13 @@ export class UserController {
   }
 
   @Get('me')
-  getProfile(@Session() session: UserSession) {
+  getProfile(@Session() session: AppSession) {
     return { user: session.user };
   }
 
   // Dummy route for Desktop App using Bearer Token
   @Get('desktop-profile')
-  getDesktopProfile(@Session() session: UserSession) {
+  getDesktopProfile(@Session() session: AppSession) {
     return {
       message: 'This is a bearer-token-protected route',
       user: session.user,
@@ -101,7 +98,7 @@ export class UserController {
   // Dummy route for RBAC
   @Get('admin-dashboard')
   @Roles([USER_ROLES.ADMIN, USER_ROLES.ORG_ADMIN])
-  getAdminDashboard(@Session() session: UserSession) {
+  getAdminDashboard(@Session() session: AppSession) {
     return {
       message: 'Welcome to the admin dashboard',
       user: session.user,
@@ -128,13 +125,26 @@ export class UserController {
     );
   }
 
+  @Get('sales-reps')
+  @Roles([USER_ROLES.ORG_ADMIN])
+  getSalesRepUsers(
+    @Session() session: AppSession,
+    @Query() queryDto: GetUsersByRoleQueryDto,
+  ) {
+    return this.userService.getUsersByRole(
+      queryDto,
+      USER_ROLES.SALES_REP,
+      session.user.organizationId ?? undefined,
+    );
+  }
+
   @Put('admins/:id')
   @Roles([USER_ROLES.ADMIN])
   editAdminUser(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body('name') name: string,
   ) {
-    return this.userService.editUser(id, name, USER_ROLES.ADMIN);
+    return this.userService.editUser({ id, name, role: USER_ROLES.ADMIN });
   }
 
   @Put('org-admins/:id')
@@ -143,7 +153,22 @@ export class UserController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body('name') name: string,
   ) {
-    return this.userService.editUser(id, name, USER_ROLES.ORG_ADMIN);
+    return this.userService.editUser({ id, name, role: USER_ROLES.ORG_ADMIN });
+  }
+
+  @Put('sales-rep/:id')
+  @Roles([USER_ROLES.ORG_ADMIN])
+  editSalesRepUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body('name') name: string,
+    @Body('isTopRep') isTopRep: boolean,
+  ) {
+    return this.userService.editUser({
+      id,
+      name,
+      role: USER_ROLES.SALES_REP,
+      isTopRep,
+    });
   }
 
   @Delete('admins/:id')
@@ -228,8 +253,40 @@ export class UserController {
     });
   }
 
+  @Put('sales-reps/ban/:id')
+  @Roles([USER_ROLES.ORG_ADMIN])
+  banSalesRepUser(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body('banReason') banReason?: string,
+    @Body('banExpires') banExpires?: number,
+  ) {
+    return this.userService.toggleUserBan({
+      id,
+      action: 'ban',
+      userRole: USER_ROLES.SALES_REP,
+      banReason,
+      banExpires,
+      headers: req.headers,
+    });
+  }
+
+  @Put('sales-reps/unban/:id')
+  @Roles([USER_ROLES.ORG_ADMIN])
+  unbanSalesRepUser(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Headers() headers: Headers,
+  ) {
+    return this.userService.toggleUserBan({
+      id,
+      userRole: USER_ROLES.SALES_REP,
+      action: 'unban',
+      headers,
+    });
+  }
+
   @Put('me')
-  editProfile(@Session() session: UserSession, @Body('name') name: string) {
+  editProfile(@Session() session: AppSession, @Body('name') name: string) {
     return this.userService.editProfile(session, name);
   }
 }
