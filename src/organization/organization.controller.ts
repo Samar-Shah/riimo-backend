@@ -8,11 +8,13 @@ import {
   Post,
   Put,
   Query,
+  Session,
 } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import { Roles } from '@thallesp/nestjs-better-auth';
 import { USER_ROLES } from '../constants';
 import { GetOrganizationsQueryDto } from './dto';
+import type { AppSession } from '../auth';
 
 @Controller('organization')
 export class OrganizationController {
@@ -24,6 +26,14 @@ export class OrganizationController {
     return this.organizationService.getOrganizations(queryDto);
   }
 
+  @Get('self')
+  @Roles([USER_ROLES.ORG_ADMIN, USER_ROLES.SALES_REP])
+  getUserOrganization(@Session() session: AppSession) {
+    return this.organizationService.getOrganizationDetails(
+      session.user.organizationId ?? '',
+    );
+  }
+
   @Post()
   @Roles([USER_ROLES.ADMIN])
   createOrganization(@Body('name') name: string) {
@@ -31,7 +41,7 @@ export class OrganizationController {
   }
 
   @Put(':id')
-  @Roles([USER_ROLES.ADMIN])
+  @Roles([USER_ROLES.ADMIN, USER_ROLES.ORG_ADMIN])
   editOrganization(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body('name') name: string,

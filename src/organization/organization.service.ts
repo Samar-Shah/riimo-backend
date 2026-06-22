@@ -94,6 +94,18 @@ export class OrganizationService {
     };
   }
 
+  async getOrganizationDetails(id: string) {
+    return this.db
+      .selectFrom('organization')
+      .selectAll()
+      .where('id', '=', id)
+      .where('isDeleted', '=', false)
+      .where('isBanned', '=', false)
+      .executeTakeFirstOrThrow(
+        () => new NotFoundException('Organization not found'),
+      );
+  }
+
   private async fetchOrganizationStats() {
     const stats = await this.db
       .selectFrom('organization')
