@@ -1,8 +1,10 @@
 // Modules
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthGuard, AuthModule } from '@thallesp/nestjs-better-auth';
 import { DatabaseModule } from './database/database.module';
 import { UserModule } from './user/user.module';
+import { InsightModule } from './insight/insight.module';
 // Controllers
 import { AppController } from './app.controller';
 // Services
@@ -17,11 +19,13 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     DatabaseModule,
     UserModule,
     AuthModule.forRoot({ auth, disableGlobalAuthGuard: true }),
     OrganizationModule,
     DashboardModule,
+    InsightModule,
   ],
   controllers: [AppController],
   providers: [

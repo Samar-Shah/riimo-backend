@@ -98,6 +98,24 @@ export interface CallBehaviour {
   turnPosition: number;
   embedding: string | null;
   precededSignal: Generated<boolean>;
+  // Incremental-clustering watermark: NULL = not yet assigned to a cluster.
+  clusterId: Selectable<BehaviourCluster>['id'] | null;
+  createdAt: GeneratedAlways<Timestamp>;
+}
+
+export interface BehaviourCluster {
+  id: GeneratedAlways<string>;
+  organizationId: Selectable<Organization>['id'];
+  callType: Selectable<CallType>['id'];
+  type: string; // behaviour type shared by all members
+  centroid: string | null; // pgvector average of member embeddings (filled by the per-run stats pass)
+  label: string; // most common behaviour text
+  memberCount: Generated<number>;
+  signalPrecedingCount: Generated<number>;
+  // Mean turn position of members — used later to bucket clusters into playbook phases.
+  avgTurnPosition: Generated<number>;
+  // Member count at the last insight synthesis — drives the refresh-delta check.
+  lastInsightMemberCount: Generated<number>;
   createdAt: GeneratedAlways<Timestamp>;
   updatedAt: Generated<Timestamp>;
 }
@@ -140,10 +158,28 @@ export interface PlaybookPattern {
 
 export interface Insight {
   id: GeneratedAlways<string>;
+  organizationId: Selectable<Organization>['id'];
+  callType: Selectable<CallType>['id'];
+  // One insight per cluster — upsert target + stable identity across runs.
+  clusterId: Selectable<BehaviourCluster>['id'];
   pattern: string;
   signalType: string;
+  // Share-of-cluster by distinct users (sum to 1). Refreshed every run.
+  topRepFrequency: Generated<number>;
+  otherRepFrequency: Generated<number>;
   createdAt: GeneratedAlways<Timestamp>;
+  // Bumped only on material content change — drives the "New" pill + future playbook gate.
   updatedAt: Generated<Timestamp>;
+}
+
+export interface InsightGeneration {
+  id: GeneratedAlways<string>;
+  organizationId: Selectable<Organization>['id'];
+  callType: Selectable<CallType>['id'];
+  // Boundary for counting new calls (call.createdAt > lastGeneratedAt) AND last-run time.
+  lastGeneratedAt: Generated<Timestamp>;
+  isLocked: Generated<boolean>;
+  createdAt: GeneratedAlways<Timestamp>;
 }
 
 export interface Database {
@@ -155,8 +191,10 @@ export interface Database {
   call_type: CallType;
   call: Call;
   call_behaviour: CallBehaviour;
+  behaviour_cluster: BehaviourCluster;
   playbook: Playbook;
   playbook_phase: PlaybookPhase;
   playbook_pattern: PlaybookPattern;
   insight: Insight;
+  insight_generation: InsightGeneration;
 }
